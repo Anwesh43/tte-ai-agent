@@ -73,3 +73,7 @@ class TTEWrapper:
             self._playEffect(effect)
             time.sleep(1)
             sys.stdout.flush()
+        return {
+            "status": "success",
+            "message": "played animation"
+        }
