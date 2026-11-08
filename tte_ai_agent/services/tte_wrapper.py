@@ -1,12 +1,6 @@
-from terminaltexteffects.effects.effects_rain import Rain
-from terminaltexteffects.effects.effects_burn import Burn
-from terminaltexteffects.effects.effects_beam import Beam
-from terminaltexteffects.effects.effects_bubbles import Bubbles
-from terminaltexteffects.effects.effects_fireworks import Fireworks
-from terminaltexteffects.effects.effects_spotlights import Spotlights 
-from terminaltexteffects.effects.effects_bouncyballs import BouncyBalls 
-from terminaltexteffects.effects.effects_laseretch import LaserEtch
-
+from terminaltexteffects.effects import Rain, Burn,Beams,  Bubbles, Fireworks, Spotlights, BouncyBalls, LaserEtch
+from terminaltexteffects.engine.terminal import TerminalConfig 
+from terminaltexteffects.utils.graphics import Color, Gradient 
 import time 
 import sys 
 
@@ -16,7 +10,7 @@ class TTEWrapper:
         self.effectMap = {
             "rain": Rain, 
             "fireworks": Fireworks,
-            "beam": Beam, 
+            "beam": Beams, 
             "bubble": Bubbles, 
             "burn": Burn, 
             "spotlights": Spotlights,
@@ -32,10 +26,19 @@ class TTEWrapper:
             "status": "Error",
             "message": f"Effect {effectName} is not supported"
         }
-    def addEffect(self, effectName : str):
+    def addEffect(self, effectName : str, text : str):
         if not(effectName in self.effectMap):
             return self._sendError(effectName=effectName)
-        self.effects.append(self.effectMap[effectName])
+        terminalConfig = TerminalConfig(canvas_width = -1, canvas_height = -1, frame_rate = 60, no_color = False, xterm_colors = False, existing_color_handling="ignore")
+        effect = self.effectMap[effectName](text, terminal_config = terminalConfig)
+        effect.effect_config.final_gradient_stops = (
+            Color("FF4500"),
+            Color("FF8C00"),
+            Color("FFD700"),
+        )
+        effect.effect_config.final_gradient_steps = 12 
+        effect.effect_config.final_gradient_direction = Gradient.Direction.HORIZONTAL
+        self.effects.append(effect)
         return self._sendSuccessResponse(effectName=effectName)
     
     def _playEffect(self, effect):
@@ -68,11 +71,15 @@ class TTEWrapper:
         self.effects.append(Bubbles(text))
         return self._sendSuccessResponse("fireworks")
 
+    def clearScreen(self):
+        sys.stdout.write("\033[2J\033[H")
+        sys.stdout.flush()
+
     def playAnimation(self):
         for effect in self.effects:
             self._playEffect(effect)
             time.sleep(1)
-            sys.stdout.flush()
+            self.clearScreen()
         return {
             "status": "success",
             "message": "played animation"
